@@ -1,3 +1,6 @@
+# 1 "C:\\Users\\zellio\\AppData\\Local\\Temp\\tmpgmjkgyap"
+#include <Arduino.h>
+# 1 "C:/Users/zellio/Documents/PlatformIO/Projects/meteo/src/main.ino"
 
 #include <Arduino.h>
 
@@ -13,19 +16,19 @@
 Adafruit_BMP085 bmp180;
 Adafruit_BMP280 bmp280;
 #define DHTPIN 2
-#define DHTTYPE    DHT11
+#define DHTTYPE DHT11
 #include <wifi_pass.h>
 DHT dht(DHTPIN, DHTTYPE);
 
 
-const char* mqtt_server = "192.168.1.14";//Adresse IP du Broker Mqtt
-const int mqttPort = 8500; //port utilisé par le Broker 
+const char* mqtt_server = "192.168.1.14";
+const int mqttPort = 8500;
 
-unsigned long last_reading = 0;               // Milliseconds since last measurement was read.
-unsigned long ms_between_reads = 5000;       // 10000 ms = 10 seconds
+unsigned long last_reading = 0;
+unsigned long ms_between_reads = 5000;
 
 struct MyStruct_send {
-  
+
   String temperature_dht;
   String humidity_dht;
   String temperature_bmp180;
@@ -47,25 +50,31 @@ MyStruct_res retour_mqtt;
 MyStruct_send capteur={"0","0","0","0"};
 WiFiClient espClient;
 PubSubClient client(espClient);
-
+void setup();
+void setup_mqtt();
+void callback(char* topic, byte *payload, unsigned int length);
+void reconnect();
+String structToJson(MyStruct_send myStruct_send);
+void loop();
+#line 51 "C:/Users/zellio/Documents/PlatformIO/Projects/meteo/src/main.ino"
 void setup(){
     Serial.begin(115200);
     dht.begin();
 
     if (!bmp180.begin()) {
-	    Serial.println("Could not find a valid BMP085 sensor, check wiring!");
+     Serial.println("Could not find a valid BMP085 sensor, check wiring!");
     while (1) {}
     }
 
 
-    bmp280.setSampling(Adafruit_BMP280::MODE_FORCED,     /* Operating Mode. */
-                Adafruit_BMP280::SAMPLING_X2,     /* Temp. oversampling */
-                Adafruit_BMP280::SAMPLING_X16,    /* Pressure oversampling */
-                Adafruit_BMP280::FILTER_X16,      /* Filtering. */
-                Adafruit_BMP280::STANDBY_MS_63); /* Standby time. */
+    bmp280.setSampling(Adafruit_BMP280::MODE_FORCED,
+                Adafruit_BMP280::SAMPLING_X2,
+                Adafruit_BMP280::SAMPLING_X16,
+                Adafruit_BMP280::FILTER_X16,
+                Adafruit_BMP280::STANDBY_MS_63);
 
 
-    while ( !Serial ) delay(100);   // wait for native usb
+    while ( !Serial ) delay(100);
     Serial.println(F("BMP280 test"));
     unsigned status;
     status = bmp280.begin(BMP280_ADDRESS_ALT, BMP280_CHIPID);
@@ -82,20 +91,20 @@ void setup(){
     Serial.println("IP Sub net Mask: ");
     Serial.println(WiFi.subnetMask());
     setup_mqtt();
-    //client.publish("esp_meteo/from_esp", "Hello from ESP32");
+
     setCpuFrequencyMhz(80);
-    //esp_sleep_enable_timer_wakeup(5 * 1000000);
-    
+
+
 }
 
 void setup_mqtt(){
     client.setServer(mqtt_server, mqttPort);
     client.setKeepAlive(70);
-    client.setCallback(callback);//Déclaration de la fonction de souscription
+    client.setCallback(callback);
     reconnect();
 }
 
-void callback(char* topic, byte *payload, unsigned int length) {//reception
+void callback(char* topic, byte *payload, unsigned int length) {
     Serial.println("-------Nouveau message du broker mqtt-----");
     StaticJsonDocument<200> jsonDocument;
     DeserializationError error = deserializeJson(jsonDocument, payload, length);
@@ -137,14 +146,14 @@ void reconnect(){
         }
     Serial.print("IP address: ");
     Serial.println(WiFi.localIP());
-    client.subscribe("esp_meteo/to_esp");//souscription au topic 
+    client.subscribe("esp_meteo/to_esp");
     }
 
 }
 
 
 String structToJson(MyStruct_send myStruct_send) {
-    // Ajouter les champs de MyStruct au document JSON
+
     StaticJsonDocument<200> jsonDocument;
     jsonDocument["humidity_dht"] = capteur.humidity_dht;
     jsonDocument["temp dht"] =capteur.temperature_dht;
@@ -154,12 +163,12 @@ String structToJson(MyStruct_send myStruct_send) {
     jsonDocument["temp_bmp_280"] = capteur.temperature_bmp280;
     jsonDocument["Ram_esp"] = capteur.ram;
     jsonDocument["wifi_rssi"]=capteur.wifi;
-    // Convertir le document JSON en une chaîne de caractères JSON
+
     String jsonString;
-    //serializeJson(jsonDocument, jsonString);
+
     serializeJsonPretty(jsonDocument, jsonString);
 
-    // Retourner la chaîne de caractères JSON
+
     return jsonString;
 }
 boolean status =0;
@@ -169,8 +178,8 @@ void loop(){
     Serial.print("Espace de RAM disponible : ");
     Serial.print(freeHeap);
     Serial.println(" octets");
-    
-    //last_reading=millis();
+
+
     capteur.humidity_dht=dht.readHumidity();
     capteur.temperature_dht=dht.readTemperature();
     capteur.pression_bmp180=String(bmp180.readPressure());
@@ -179,7 +188,7 @@ void loop(){
     capteur.temperature_bmp280=String(bmp280.readTemperature());
     capteur.ram=String(freeHeap);
     capteur.wifi=WiFi.RSSI();
-    Serial.print("Humidity dht 11: "); Serial.println(capteur.humidity_dht); 
+    Serial.print("Humidity dht 11: "); Serial.println(capteur.humidity_dht);
     Serial.print("Temp dht 11: "); Serial.println(capteur.temperature_dht);
     Serial.print("Pression bmp 180: "); Serial.println(capteur.pression_bmp180);
     Serial.print("Temp bmp 180: "); Serial.println(capteur.temperature_bmp180);
@@ -187,7 +196,7 @@ void loop(){
     Serial.print("Temp bmp 280: "); Serial.println(capteur.temperature_bmp280);
     Serial.print("Wifi rssi: ");Serial.println(capteur.wifi);
 
-    
+
     client.loop();
     reconnect();
 
@@ -196,11 +205,11 @@ void loop(){
           Serial.println("reco au wifi");
           Serial.print(".");
         }
-        
+
     status=client.publish("esp_meteo/from_esp",structToJson(capteur).c_str());
     Serial.println("send mqtt");
-    
+
     delay(retour_mqtt.loop_time);
-    //esp_deep_sleep_start();
+
 
 }
