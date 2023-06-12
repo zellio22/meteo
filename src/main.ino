@@ -40,8 +40,9 @@ struct MyStruct_res {
   int var2;
   int var3;
   int var4;
+  int loop_time = 2000;
 };
-MyStruct_res retour_mqtt={1,1,1,1};//pas besoin
+MyStruct_res retour_mqtt;
 MyStruct_send capteur={"0","0","0","0"};
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -101,6 +102,7 @@ void callback(char* topic, byte *payload, unsigned int length) {//reception
     retour_mqtt.var2 = {jsonDocument["var2"]};
     retour_mqtt.var3 = {jsonDocument["var3"]};
     retour_mqtt.var4 = {jsonDocument["var4"]};
+    retour_mqtt.loop_time = {jsonDocument["loop_time"]};
     Serial.print("Canal:");
     Serial.println(topic);
     Serial.print("donnee 1: ");
@@ -111,6 +113,8 @@ void callback(char* topic, byte *payload, unsigned int length) {//reception
     Serial.println(retour_mqtt.var3);
     Serial.print("donnee 4: ");
     Serial.println(retour_mqtt.var4);
+    Serial.print("loop_time: ");
+    Serial.println(retour_mqtt.loop_time);
 
 }
 
@@ -185,17 +189,21 @@ void loop(){
     reconnect();
  
     
-    while (status == 0)
-    {
-        status=client.publish("esp_meteo/from_esp",structToJson(capteur).c_str());
-        Serial.println("send mqtt");
-    }
 
-    status = 0;
 
+    status=client.publish("esp_meteo/from_esp",structToJson(capteur).c_str());
+    Serial.println("send mqtt");
     
     
-    delay(60000);
+    while (WiFi.status() != WL_CONNECTED) {
+          delay(500);
+          Serial.println("reco au wifi");
+          Serial.print(".");
+        }
+    Serial.print("Wifi rssi: ");
+    Serial.println(WiFi.RSSI());
+    
+    delay(retour_mqtt.loop_time);
     //esp_deep_sleep_start();
 
 }
