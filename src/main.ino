@@ -122,6 +122,19 @@ void callback(char* topic, byte *payload, unsigned int length) {//reception
 void reconnect(){
     while (!client.connected()) {
         Serial.println("Connection au serveur MQTT ...");
+        if (WiFi.status() != WL_CONNECTED){
+            
+            WiFi.begin(ssid, password);
+            while (WiFi.status() != WL_CONNECTED) {
+                delay(500);
+                Serial.println("reco au wifi");
+                Serial.print(".");
+            }
+
+        }
+
+        
+        
         if (client.connect("ESP32Client")) {
             Serial.print("MQTT connecté: ");
             Serial.println(client.connect("ESP32Client"));
@@ -191,12 +204,6 @@ void loop(){
     client.loop();
     reconnect();
 
-    while (WiFi.status() != WL_CONNECTED) {
-          delay(500);
-          Serial.println("reco au wifi");
-          Serial.print(".");
-        }
-        
     status=client.publish("esp_meteo/from_esp",structToJson(capteur).c_str());
     Serial.println("send mqtt");
     
